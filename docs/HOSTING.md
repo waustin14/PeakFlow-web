@@ -3,12 +3,12 @@
 ## Architecture
 
 ```
-Cloudflare Pages       ──►  SPA (static Vite bundle, CDN-served)
-Cloudflare Worker      ──►  /noaa-api/*   → https://hdsc.nws.noaa.gov/
-Cloudflare Worker      ──►  /contour-api/* → <Cloud Run service URL>  (when ready)
+Cloudflare Workers + Assets  ──►  SPA (static Vite bundle, CDN-served)
+Cloudflare Worker            ──►  /noaa-api/*    → https://hdsc.nws.noaa.gov/
+Cloudflare Worker            ──►  /contour-api/* → <Cloud Run service URL>  (when ready)
 ```
 
-The two Workers are deployed alongside the Pages site and intercept matching URL prefixes — no separate infrastructure, no cold starts.
+Cloudflare deploys this as a **Workers + Assets** project (via `wrangler deploy`), not legacy Pages. SPA routing is handled by `wrangler.jsonc` (`not_found_handling: single-page-application`) — no `_redirects` file needed.
 
 ---
 
@@ -20,21 +20,15 @@ The two Workers are deployed alongside the Pages site and intercept matching URL
 
 ---
 
-## Step 1 — One-time code change: SPA routing
+## Step 1 — Wrangler configuration
 
-Cloudflare Pages needs a `_redirects` file to serve `index.html` for all routes, otherwise a page refresh on any step will 404.
+SPA routing is configured in `wrangler.jsonc` at the repo root via `not_found_handling: single-page-application`. This is already committed — no additional setup needed.
 
-Create `public/_redirects`:
-
-```
-/* /index.html 200
-```
-
-This file is copied into `dist/` automatically by Vite during build.
+Do **not** add a `public/_redirects` catch-all rule (`/* /index.html 200`). In Workers + Assets mode, Wrangler treats it as an infinite loop and rejects the deployment (error 10021).
 
 ---
 
-## Step 2 — Connect repo to Cloudflare Pages
+## Step 2 — Connect repo to Cloudflare
 
 1. Go to **Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git**
 2. Select the `PeakFlow` repository
@@ -130,8 +124,7 @@ Bind it to the Pages project with route `/contour-api/*`.
 ## Deployment Checklist
 
 ### One-time setup
-- [ ] Create `public/_redirects` with `/* /index.html 200`
-- [ ] Connect repo to Cloudflare Pages
+- [ ] Connect repo to Cloudflare
 - [ ] Set build command (`npm run build`), output dir (`dist`), Node version (`18`)
 - [ ] Add `VITE_GOOGLE_MAPS_API_KEY` and `VITE_CONTOUR_API_KEY` env vars
 - [ ] Deploy and verify the app loads at the `*.pages.dev` URL
