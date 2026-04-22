@@ -74,3 +74,39 @@ export interface NoaaFetchState {
   error?: string
   lastFetchedAt?: string
 }
+
+// ── Reaches ────────────────────────────────────────────────────────────────
+
+export interface Reach {
+  id: string
+  name: string
+  receivingReachId: string | 'outlet'
+  lengthFt: number
+  manningsN: number
+  frictionSlopeFtFt: number
+  bottomWidthFt: number
+  avgSideSlopes: number   // horizontal per 1 vertical (e.g. 2 means 2:1)
+  structureId?: string
+}
+
+// ── Structures ─────────────────────────────────────────────────────────────
+
+export type SpillwayType = 'pipe' | 'weir'
+
+export interface Structure {
+  id: string
+  name: string
+  // Pond surface area (both optional)
+  pondSurfaceAreaAtCrestAcres?: number
+  additionalDepthFt?: number           // feet above spillway crest
+  additionalSurfaceAreaAcres?: number  // area at that elevation
+  spillwayType: SpillwayType
+  // Pipe spillway
+  trialDiameter1In?: number
+  trialDiameter2In?: number
+  trialDiameter3In?: number
+  pipeInvertToSpillwayFt?: number
+  // Weir spillway
+  weirLengthFt?: number
+  weirCoefficientC?: number            // default 3.33 for broad-crested
+}

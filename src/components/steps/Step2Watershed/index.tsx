@@ -36,13 +36,24 @@ export function Step2Watershed() {
   } = useContourService()
 
   const [manualArea, setManualAreaLocal] = useState('')
+  const [manualLat, setManualLat] = useState('')
+  const [manualLng, setManualLng] = useState('')
   const [showManual, setShowManual] = useState(false)
 
   const handleManualSubmit = () => {
     const val = parseFloat(manualArea)
     if (val > 0) {
-      setManualArea(val)
+      const lat = parseFloat(manualLat)
+      const lng = parseFloat(manualLng)
+      const hasCoords = !isNaN(lat) && !isNaN(lng)
+      setWatershed({
+        path: [],
+        areaAcres: val,
+        centroid: hasCoords ? { lat, lng } : { lat: 0, lng: 0 },
+      })
       setManualAreaLocal('')
+      setManualLat('')
+      setManualLng('')
       setShowManual(false)
     }
   }
@@ -102,23 +113,63 @@ export function Step2Watershed() {
           </Button>
 
           {showManual && (
-            <div className="space-y-2">
-              <Label className="text-zinc-600 dark:text-zinc-300">Watershed Area (acres)</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.1"
-                  value={manualArea}
-                  onChange={(e) => setManualAreaLocal(e.target.value)}
-                  placeholder="e.g., 250"
-                  className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white"
-                  onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-                />
-                <Button onClick={handleManualSubmit} size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  Set
-                </Button>
+            <div className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <Label className="text-zinc-600 dark:text-zinc-300 text-xs font-medium">
+                  Watershed Area <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0.01"
+                    step="0.1"
+                    value={manualArea}
+                    onChange={(e) => setManualAreaLocal(e.target.value)}
+                    placeholder="e.g., 250"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white"
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+                  />
+                  <span className="text-xs text-zinc-500 shrink-0">acres</span>
+                </div>
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-zinc-600 dark:text-zinc-300 text-xs font-medium flex items-center gap-1">
+                  Watershed Centroid
+                  <span className="text-[10px] font-normal text-zinc-400">(optional — enables NOAA rainfall fetch)</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Latitude</span>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={manualLat}
+                      onChange={(e) => setManualLat(e.target.value)}
+                      placeholder="e.g., 38.9072"
+                      className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500">Longitude</span>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={manualLng}
+                      onChange={(e) => setManualLng(e.target.value)}
+                      placeholder="e.g., -77.0369"
+                      className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={handleManualSubmit}
+                disabled={!manualArea || parseFloat(manualArea) <= 0}
+                size="sm"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Set Watershed
+              </Button>
             </div>
           )}
         </CardContent>
