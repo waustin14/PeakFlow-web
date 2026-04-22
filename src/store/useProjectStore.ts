@@ -76,6 +76,7 @@ export interface ProjectActions {
   updateFlowSegment: (id: string, updates: Partial<FlowSegment>) => void
   removeFlowSegment: (id: string) => void
   reorderFlowSegments: (orderedIds: string[]) => void
+  resetFlowSegments: () => void
   setTcHours: (hours: number | null) => void
 
   // Reaches
@@ -266,6 +267,14 @@ export const useProjectStore = create<ProjectState & ProjectActions>()(
           s.meta.updatedAt = new Date().toISOString()
         }),
 
+      resetFlowSegments: () =>
+        set((s) => {
+          s.flowSegments = []
+          s.tcHours = null
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
       setTcHours: (hours) =>
         set((s) => {
           s.tcHours = hours
@@ -361,11 +370,20 @@ export const selectIsStep3Complete = (s: ProjectState) => {
   })
 }
 
-export const selectIsStep4Complete = (s: ProjectState) =>
-  s.landUseEntries.length > 0 &&
-  s.landUseEntries.every((e) => e.areaAcres > 0) &&
-  s.compositeCN !== null &&
-  s.compositeCN > 0
+export const selectIsStep4Complete = (s: ProjectState) => {
+  if (
+    s.landUseEntries.length === 0 ||
+    !s.landUseEntries.every((e) => e.areaAcres > 0) ||
+    s.compositeCN === null ||
+    s.compositeCN <= 0
+  ) return false
+  // Block if total land use area exceeds watershed area (with small floating-point tolerance)
+  if (s.watershed && s.watershed.areaAcres > 0) {
+    const totalArea = s.landUseEntries.reduce((sum, e) => sum + e.areaAcres, 0)
+    if (totalArea > s.watershed.areaAcres + 0.01) return false
+  }
+  return true
+}
 
 export const selectIsStep5Complete = (s: ProjectState) =>
   s.flowSegments.length > 0 && s.tcHours !== null && s.tcHours > 0
