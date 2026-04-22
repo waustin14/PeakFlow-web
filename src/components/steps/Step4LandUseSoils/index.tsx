@@ -65,19 +65,18 @@ export function Step4LandUseSoils() {
 
       {/* Composite CN badge */}
       {compositeCN !== null && (
-        <Card className="bg-blue-900/30 border-blue-700">
+        <Card className="bg-blue-900/30 border-blue-700 overflow-hidden">
           <CardContent className="py-4 space-y-3">
-            <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-3">
               <div className="shrink-0">
                 <p className="text-xs text-blue-300 uppercase tracking-wider mb-0.5">Composite CN</p>
                 <p className="text-3xl font-bold text-white tabular-nums">{compositeCN.toFixed(1)}</p>
               </div>
-              <div className="text-right text-xs text-zinc-400 min-w-0">
-                <div className="tabular-nums">{totalArea.toFixed(2)} ac defined</div>
-                {watershedArea > 0 && (
-                  <div className="tabular-nums">{watershedArea.toFixed(2)} ac watershed</div>
-                )}
-              </div>
+              {watershedArea > 0 && (
+                <div className="flex-1 min-w-0 text-xs text-zinc-400 space-y-0.5 text-right">
+                  <div className="tabular-nums truncate">{totalArea.toFixed(2)} ac / {watershedArea.toFixed(2)} ac</div>
+                </div>
+              )}
             </div>
             {watershedArea > 0 && (() => {
               const pct = totalArea / watershedArea
@@ -91,9 +90,9 @@ export function Step4LandUseSoils() {
                     <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: barWidth }} />
                   </div>
                   {isOver ? (
-                    <div className="flex items-center gap-1 text-xs text-red-400">
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                      <span>Total area exceeds watershed by {(totalArea - watershedArea).toFixed(2)} ac — remove or reduce entries to proceed.</span>
+                    <div className="flex items-start gap-1 text-xs text-red-400">
+                      <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                      <span>Exceeds watershed by {(totalArea - watershedArea).toFixed(2)} ac — reduce entries to proceed.</span>
                     </div>
                   ) : isGood ? (
                     <div className="flex items-center gap-1 text-xs text-emerald-400">
@@ -101,9 +100,9 @@ export function Step4LandUseSoils() {
                       <span>{(pct * 100).toFixed(0)}% of watershed area covered</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 text-xs text-amber-400">
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                      <span>{(pct * 100).toFixed(0)}% of watershed area covered — {(watershedArea - totalArea).toFixed(2)} ac unaccounted.</span>
+                    <div className="flex items-start gap-1 text-xs text-amber-400">
+                      <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                      <span>{(pct * 100).toFixed(0)}% covered — {(watershedArea - totalArea).toFixed(2)} ac unaccounted.</span>
                     </div>
                   )}
                 </div>

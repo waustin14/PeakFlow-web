@@ -12,6 +12,7 @@ export interface UIState {
   activeStep: Step
   isPanelOpen: boolean
   isDrawingMode: boolean
+  isMapCollapsed: boolean
   mapCenter: { lat: number; lng: number }
   mapZoom: number
   theme: Theme
@@ -28,6 +29,7 @@ export interface UIActions {
   setActiveStep: (step: Step) => void
   setIsPanelOpen: (open: boolean) => void
   setIsDrawingMode: (drawing: boolean) => void
+  setIsMapCollapsed: (collapsed: boolean) => void
   setMapCenter: (center: { lat: number; lng: number }) => void
   setMapZoom: (zoom: number) => void
   toggleTheme: () => void
@@ -43,6 +45,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   activeStep: 1,
   isPanelOpen: true,
   isDrawingMode: false,
+  isMapCollapsed: false,
   mapCenter: { lat: 37.0902, lng: -95.7129 },  // Center of USA
   mapZoom: 5,
   theme: (localStorage.getItem('pf-theme') as Theme) ?? 'dark',
@@ -56,6 +59,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   setActiveStep: (step) => set({ activeStep: step }),
   setIsPanelOpen: (open) => set({ isPanelOpen: open }),
   setIsDrawingMode: (drawing) => set({ isDrawingMode: drawing }),
+  setIsMapCollapsed: (collapsed) => set({ isMapCollapsed: collapsed }),
   setMapCenter: (center) => set({ mapCenter: center }),
   setMapZoom: (zoom) => set({ mapZoom: zoom }),
   toggleTheme: () => set((s) => {
