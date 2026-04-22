@@ -66,12 +66,12 @@ export function Step4LandUseSoils() {
       {/* Composite CN badge */}
       {compositeCN !== null && (
         <Card className="bg-blue-900/30 border-blue-700">
-          <CardContent className="py-4 flex items-center justify-between">
-            <div>
+          <CardContent className="py-4 flex items-center justify-between gap-2 min-w-0">
+            <div className="shrink-0">
               <p className="text-xs text-blue-300 uppercase tracking-wider mb-0.5">Composite CN</p>
               <p className="text-3xl font-bold text-white tabular-nums">{compositeCN.toFixed(1)}</p>
             </div>
-            <div className="text-right text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="text-right text-xs text-zinc-500 dark:text-zinc-400 min-w-0">
               <div>{totalArea.toFixed(2)} ac defined</div>
               {watershedArea > 0 && (
                 <div className={Math.abs(totalArea - watershedArea) / watershedArea > 0.05 ? 'text-amber-400' : 'text-emerald-400'}>
