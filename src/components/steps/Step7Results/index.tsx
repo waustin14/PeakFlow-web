@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Calculator, Download, FileDown } from 'lucide-react'
+import { AlertTriangle, Calculator, Download, FileDown } from 'lucide-react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useTR55Results } from '@/hooks/useTR55Results'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import type { ReturnPeriod } from '@/types/project'
 
 export function Step7Results() {
   const results = useProjectStore((s) => s.results)
+  const tcHours = useProjectStore((s) => s.tcHours)
   const returnPeriods = useProjectStore((s) => s.returnPeriods)
   const allowableOutflows = useProjectStore((s) => s.allowableOutflows)
   const setAllowableOutflow = useProjectStore((s) => s.setAllowableOutflow)
@@ -85,6 +86,17 @@ export function Step7Results() {
         </CardContent>
       </Card>
 
+      {/* Tc validity warning */}
+      {tcHours !== null && tcHours > 10 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            <span className="font-semibold">Tc is {tcHours.toFixed(2)} hr — exceeds the 10 hr TR-55 validity limit.</span>{' '}
+            Return to Step 5 to review flow path segments. Results computed below may be unreliable.
+          </span>
+        </div>
+      )}
+
       {/* Compute button */}
       <Button onClick={handleCompute} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
         <Calculator className="h-4 w-4 mr-2" />
@@ -94,7 +106,39 @@ export function Step7Results() {
       {/* Results */}
       {results && (
         <div ref={resultsRef} className="space-y-6">
-          {/* Summary */}
+          {/* Design summary — key numbers for report narrative */}
+          <Card className="bg-blue-900/30 border-blue-700">
+            <CardContent className="py-4 space-y-3">
+              <p className="text-xs text-blue-300 uppercase tracking-wider">Design Summary</p>
+              <div className="grid gap-x-4 gap-y-3" style={{ gridTemplateColumns: `repeat(${returnPeriods.length}, minmax(0, 1fr))` }}>
+                {(returnPeriods as ReturnPeriod[]).map((period) => {
+                  const qp = results.peakDischarge.find((r) => r.returnPeriod === period)?.peakDischargeCfs
+                  const vs = results.detentionBasin.find((r) => r.returnPeriod === period)?.requiredStorageAcreFt
+                  return (
+                    <div key={period} className="space-y-2">
+                      <p className="text-xs font-semibold text-blue-300 tabular-nums">{period}-yr</p>
+                      <div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Peak Flow</p>
+                        <p className="text-lg font-bold text-white tabular-nums">
+                          {qp !== undefined ? qp.toFixed(1) : '—'}
+                          <span className="text-xs font-normal text-zinc-400 ml-1">cfs</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Req. Storage</p>
+                        <p className="text-lg font-bold text-white tabular-nums">
+                          {vs !== undefined ? vs.toFixed(3) : '—'}
+                          <span className="text-xs font-normal text-zinc-400 ml-1">ac-ft</span>
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Input summary */}
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: 'Composite CN', value: results.compositeCN.toFixed(1) },

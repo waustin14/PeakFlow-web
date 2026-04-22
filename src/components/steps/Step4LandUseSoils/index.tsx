@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Search } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Plus, Trash2, Search } from 'lucide-react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { useCompositeCN } from '@/hooks/useCompositeCN'
 import { CN_TABLE } from '@/data/cnTable'
@@ -66,19 +66,49 @@ export function Step4LandUseSoils() {
       {/* Composite CN badge */}
       {compositeCN !== null && (
         <Card className="bg-blue-900/30 border-blue-700">
-          <CardContent className="py-4 flex items-center justify-between gap-2 min-w-0">
-            <div className="shrink-0">
-              <p className="text-xs text-blue-300 uppercase tracking-wider mb-0.5">Composite CN</p>
-              <p className="text-3xl font-bold text-white tabular-nums">{compositeCN.toFixed(1)}</p>
+          <CardContent className="py-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="shrink-0">
+                <p className="text-xs text-blue-300 uppercase tracking-wider mb-0.5">Composite CN</p>
+                <p className="text-3xl font-bold text-white tabular-nums">{compositeCN.toFixed(1)}</p>
+              </div>
+              <div className="text-right text-xs text-zinc-400 min-w-0">
+                <div className="tabular-nums">{totalArea.toFixed(2)} ac defined</div>
+                {watershedArea > 0 && (
+                  <div className="tabular-nums">{watershedArea.toFixed(2)} ac watershed</div>
+                )}
+              </div>
             </div>
-            <div className="text-right text-xs text-zinc-500 dark:text-zinc-400 min-w-0">
-              <div>{totalArea.toFixed(2)} ac defined</div>
-              {watershedArea > 0 && (
-                <div className={Math.abs(totalArea - watershedArea) / watershedArea > 0.05 ? 'text-amber-400' : 'text-emerald-400'}>
-                  {((totalArea / watershedArea) * 100).toFixed(0)}% of watershed
+            {watershedArea > 0 && (() => {
+              const pct = totalArea / watershedArea
+              const isOver = totalArea > watershedArea + 0.01
+              const isGood = pct >= 0.95 && !isOver
+              const barColor = isOver ? 'bg-red-500' : isGood ? 'bg-emerald-500' : 'bg-amber-500'
+              const barWidth = `${Math.min(pct * 100, 100)}%`
+              return (
+                <div className="space-y-1.5">
+                  <div className="h-1.5 w-full rounded-full bg-zinc-700 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${barColor}`} style={{ width: barWidth }} />
+                  </div>
+                  {isOver ? (
+                    <div className="flex items-center gap-1 text-xs text-red-400">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>Total area exceeds watershed by {(totalArea - watershedArea).toFixed(2)} ac — remove or reduce entries to proceed.</span>
+                    </div>
+                  ) : isGood ? (
+                    <div className="flex items-center gap-1 text-xs text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3 shrink-0" />
+                      <span>{(pct * 100).toFixed(0)}% of watershed area covered</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-xs text-amber-400">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      <span>{(pct * 100).toFixed(0)}% of watershed area covered — {(watershedArea - totalArea).toFixed(2)} ac unaccounted.</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              )
+            })()}
           </CardContent>
         </Card>
       )}

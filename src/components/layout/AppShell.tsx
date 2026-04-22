@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useUIStore, type Step } from '@/store/useUIStore'
 import { useProjectStore, selectIsStep1Complete, selectIsStep2Complete, selectIsStep3Complete, selectIsStep4Complete, selectIsStep5Complete, selectIsStep6Complete } from '@/store/useProjectStore'
 import { cn } from '@/lib/utils'
@@ -100,14 +100,23 @@ export function AppShell() {
           </StepErrorBoundary>
         </ScrollArea>
 
-        {/* Next button footer — hidden on last step */}
+        {/* Nav footer — hidden on last step */}
         {activeStep < 7 && (
-          <div className="shrink-0 px-5 py-3 border-t border-border">
+          <div className="shrink-0 px-5 py-3 border-t border-border flex gap-2">
+            {activeStep > 1 && (
+              <button
+                onClick={() => setActiveStep((activeStep - 1) as Step)}
+                className="flex items-center justify-center gap-1 rounded-md px-3 py-2 text-sm font-semibold border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all duration-150"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
+              </button>
+            )}
             <button
               onClick={() => isComplete && setActiveStep((activeStep + 1) as Step)}
               disabled={!isComplete}
               className={cn(
-                'w-full flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-all duration-150',
+                'flex-1 flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-all duration-150',
                 isComplete
                   ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
                   : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'

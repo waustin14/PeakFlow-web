@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Plus, GripVertical, Trash2, Clock } from 'lucide-react'
+import { Plus, GripVertical, Trash2, Clock, AlertTriangle } from 'lucide-react'
 import {
   DndContext,
   closestCenter,
@@ -38,6 +38,7 @@ export function Step5TimeOfConc() {
   const updateFlowSegment = useProjectStore((s) => s.updateFlowSegment)
   const removeFlowSegment = useProjectStore((s) => s.removeFlowSegment)
   const reorderFlowSegments = useProjectStore((s) => s.reorderFlowSegments)
+  const resetFlowSegments = useProjectStore((s) => s.resetFlowSegments)
   const setTcHours = useProjectStore((s) => s.setTcHours)
   const tcHours = useProjectStore((s) => s.tcHours)
 
@@ -116,8 +117,19 @@ export function Step5TimeOfConc() {
         </Card>
       )}
 
+      {/* TR-55 validity warning: method undefined for Tc > 10 hr */}
+      {tcHours !== null && tcHours > 10 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>
+            <span className="font-semibold">Tc exceeds 10 hours ({tcHours.toFixed(2)} hr).</span>{' '}
+            TR-55 is only valid for Tc ≤ 10 hr. Check flow path lengths and slopes — results will be unreliable.
+          </span>
+        </div>
+      )}
+
       {/* Add segment buttons */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         {SEGMENT_TYPES.map((t) => (
           <Button
             key={t.value}
@@ -130,6 +142,17 @@ export function Step5TimeOfConc() {
             {t.label}
           </Button>
         ))}
+        {flowSegments.length > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={resetFlowSegments}
+            className="ml-auto text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            Clear all
+          </Button>
+        )}
       </div>
 
       {/* Sortable segment list */}
@@ -254,7 +277,12 @@ function SegmentFields({ seg, onUpdate }: { seg: FlowSegment; onUpdate: (u: Part
           </div>
           {numField('2-yr P (in)', 'p2InchRainfall', seg.p2InchRainfall, 0.1, 'in')}
         </div>
-        <p className="text-xs text-zinc-500">Length capped at 300 ft per TR-55</p>
+        {seg.lengthFt > 300 && (
+          <div className="flex items-start gap-1.5 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-400">
+            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+            <span>Sheet flow &gt; 300 ft is unreliable per TR-55. Consider splitting the remainder into a Shallow Concentrated segment.</span>
+          </div>
+        )}
       </div>
     )
   }
