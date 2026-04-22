@@ -61,7 +61,7 @@ export function AppShell() {
 
       {/* Step panel */}
       <div className={cn(
-        'flex flex-col border-r border-border bg-background',
+        'flex flex-col border-r border-border bg-background overflow-x-hidden',
         activeStep === 7 ? 'flex-1' : 'w-[380px] shrink-0'
       )}>
         {/* Step panel header */}
@@ -94,7 +94,7 @@ export function AppShell() {
 
         <ScrollArea className="flex-1">
           <StepErrorBoundary>
-            <div className="p-5">
+            <div className="p-5 min-w-0 w-full">
               <StepComponent />
             </div>
           </StepErrorBoundary>
