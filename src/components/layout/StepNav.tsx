@@ -8,15 +8,17 @@ import {
   selectIsStep3Complete,
   selectIsStep4Complete,
   selectIsStep5Complete,
+  selectIsStep6Complete,
 } from '@/store/useProjectStore'
 
-const STEPS: { id: Step; label: string; description: string }[] = [
-  { id: 1, label: 'Project Setup',    description: 'Name & return periods' },
-  { id: 2, label: 'Watershed',        description: 'Area delineation'       },
-  { id: 3, label: 'Rainfall',         description: 'Design storm depths'    },
-  { id: 4, label: 'Land Use & Soils', description: 'Composite CN'           },
-  { id: 5, label: 'Time of Conc.',    description: 'Flow path segments'     },
-  { id: 6, label: 'Results',          description: 'Peak discharge & storage'},
+const STEPS: { id: Step; label: string; description: string; optional?: boolean }[] = [
+  { id: 1, label: 'Project Setup',      description: 'Name & return periods'   },
+  { id: 2, label: 'Watershed',          description: 'Area delineation'         },
+  { id: 3, label: 'Rainfall',           description: 'Design storm depths'      },
+  { id: 4, label: 'Land Use & Soils',   description: 'Composite CN'             },
+  { id: 5, label: 'Time of Conc.',      description: 'Flow path segments'       },
+  { id: 6, label: 'Reaches & Structures', description: 'Channel routing & ponds', optional: true },
+  { id: 7, label: 'Results',            description: 'Peak discharge & storage' },
 ]
 
 function useStepCompletion(): Record<Step, boolean> {
@@ -27,7 +29,8 @@ function useStepCompletion(): Record<Step, boolean> {
     3: selectIsStep3Complete(s),
     4: selectIsStep4Complete(s),
     5: selectIsStep5Complete(s),
-    6: false,
+    6: selectIsStep6Complete(s),
+    7: false,
   }
 }
 
@@ -101,13 +104,20 @@ export function StepNav() {
 
             {/* Label + description */}
             <span className="min-w-0 flex-1">
-              <span
-                className={cn(
-                  'block text-[13px] leading-tight truncate',
-                  active ? 'font-semibold text-foreground' : 'font-medium'
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    'block text-[13px] leading-tight truncate',
+                    active ? 'font-semibold text-foreground' : 'font-medium'
+                  )}
+                >
+                  {step.label}
+                </span>
+                {step.optional && (
+                  <span className="shrink-0 rounded px-1 py-px text-[8px] font-semibold uppercase tracking-wider bg-muted text-muted-foreground leading-none">
+                    optional
+                  </span>
                 )}
-              >
-                {step.label}
               </span>
               <span className="block text-[10px] leading-tight text-muted-foreground truncate mt-0.5 tracking-wide">
                 {step.description}

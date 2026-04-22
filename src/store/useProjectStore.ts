@@ -13,6 +13,8 @@ import type {
   ChannelFlowSegment,
   NoaaFetchState,
   StormType,
+  Reach,
+  Structure,
 } from '@/types/project'
 
 // Distributive Omit preserves discriminated unions
@@ -38,6 +40,8 @@ export interface ProjectState {
   compositeCN: number | null
   flowSegments: FlowSegment[]
   tcHours: number | null
+  reaches: Reach[]
+  structures: Structure[]
   results: TR55Results | null
   allowableOutflows: Partial<Record<ReturnPeriod, number>>
 }
@@ -74,6 +78,16 @@ export interface ProjectActions {
   reorderFlowSegments: (orderedIds: string[]) => void
   setTcHours: (hours: number | null) => void
 
+  // Reaches
+  addReach: (reach: Omit<Reach, 'id'>) => void
+  updateReach: (id: string, updates: Partial<Omit<Reach, 'id'>>) => void
+  removeReach: (id: string) => void
+
+  // Structures
+  addStructure: (structure: Omit<Structure, 'id'>) => void
+  updateStructure: (id: string, updates: Partial<Omit<Structure, 'id'>>) => void
+  removeStructure: (id: string) => void
+
   // Results
   setResults: (results: TR55Results | null) => void
   setAllowableOutflow: (period: ReturnPeriod, cfs: number) => void
@@ -94,6 +108,8 @@ const DEFAULT_STATE: ProjectState = {
   compositeCN: null,
   flowSegments: [],
   tcHours: null,
+  reaches: [],
+  structures: [],
   results: null,
   allowableOutflows: {},
 }
@@ -255,6 +271,61 @@ export const useProjectStore = create<ProjectState & ProjectActions>()(
           s.tcHours = hours
         }),
 
+      addReach: (reach) =>
+        set((s) => {
+          s.reaches.push({ ...reach, id: uuidv4() })
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      updateReach: (id, updates) =>
+        set((s) => {
+          const idx = s.reaches.findIndex((r) => r.id === id)
+          if (idx !== -1) {
+            Object.assign(s.reaches[idx], updates)
+            s.results = null
+          }
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      removeReach: (id) =>
+        set((s) => {
+          // Clear structureId references and receivingReachId references
+          s.reaches = s.reaches.filter((r) => r.id !== id)
+          s.reaches.forEach((r) => {
+            if (r.receivingReachId === id) r.receivingReachId = 'outlet'
+          })
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      addStructure: (structure) =>
+        set((s) => {
+          s.structures.push({ ...structure, id: uuidv4() })
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      updateStructure: (id, updates) =>
+        set((s) => {
+          const idx = s.structures.findIndex((st) => st.id === id)
+          if (idx !== -1) {
+            Object.assign(s.structures[idx], updates)
+            s.results = null
+          }
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      removeStructure: (id) =>
+        set((s) => {
+          s.structures = s.structures.filter((st) => st.id !== id)
+          // Clear references from reaches
+          s.reaches.forEach((r) => {
+            if (r.structureId === id) delete r.structureId
+          })
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
       setResults: (results) =>
         set((s) => {
           s.results = results
@@ -299,4 +370,7 @@ export const selectIsStep4Complete = (s: ProjectState) =>
 export const selectIsStep5Complete = (s: ProjectState) =>
   s.flowSegments.length > 0 && s.tcHours !== null && s.tcHours > 0
 
-export const selectIsStep6Complete = (s: ProjectState) => s.results !== null
+// Step 6 is optional — always passes so it never blocks navigation to Results.
+export const selectIsStep6Complete = (_s: ProjectState) => true
+
+export const selectIsStep7Complete = (s: ProjectState) => s.results !== null
