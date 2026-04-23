@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, GripVertical, Trash2, Clock, AlertTriangle } from 'lucide-react'
 import {
   DndContext,
@@ -41,6 +41,7 @@ export function Step5TimeOfConc() {
   const resetFlowSegments = useProjectStore((s) => s.resetFlowSegments)
   const setTcHours = useProjectStore((s) => s.setTcHours)
   const tcHours = useProjectStore((s) => s.tcHours)
+  const p2FromNoaa = useProjectStore((s) => s.rainfall?.depths[2] ?? null)
 
   // Compute Tc whenever segments change
   useEffect(() => {
@@ -82,7 +83,7 @@ export function Step5TimeOfConc() {
     const lengthFt = 100
     const slopeFtFt = 0.02
     if (type === 'sheet') {
-      addFlowSegment({ type: 'sheet', label, lengthFt, slopeFtFt, manningsN: 0.15, p2InchRainfall: 3.0 })
+      addFlowSegment({ type: 'sheet', label, lengthFt, slopeFtFt, manningsN: 0.15, p2InchRainfall: p2FromNoaa ?? 3.0 })
     } else if (type === 'shallow_concentrated') {
       addFlowSegment({ type: 'shallow_concentrated', label, lengthFt, slopeFtFt, surfaceType: 'unpaved' })
     } else {
@@ -101,14 +102,14 @@ export function Step5TimeOfConc() {
 
       {/* Tc summary */}
       {tcHours !== null && (
-        <Card className="bg-blue-900/30 border-blue-700">
+        <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700">
           <CardContent className="py-4 flex items-center gap-3">
-            <Clock className="h-5 w-5 text-blue-400 shrink-0" />
+            <Clock className="h-5 w-5 text-blue-500 dark:text-blue-400 shrink-0" />
             <div>
-              <p className="text-xs text-blue-300 uppercase tracking-wider mb-0.5">Total Tc</p>
-              <p className="text-2xl font-bold text-white tabular-nums">
+              <p className="text-xs text-blue-600 dark:text-blue-300 uppercase tracking-wider mb-0.5">Total Tc</p>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-white tabular-nums">
                 {tcHours.toFixed(3)} hr
-                <span className="text-sm text-zinc-400 ml-2 font-normal">
+                <span className="text-sm text-zinc-500 dark:text-zinc-400 ml-2 font-normal">
                   ({(tcHours * 60).toFixed(1)} min)
                 </span>
               </p>
@@ -150,7 +151,7 @@ export function Step5TimeOfConc() {
             className="ml-auto text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Clear all
+            Clear All
           </Button>
         )}
       </div>
@@ -164,6 +165,7 @@ export function Step5TimeOfConc() {
                 key={seg.id}
                 seg={seg}
                 index={idx}
+                p2FromNoaa={p2FromNoaa}
                 onUpdate={(updates) => updateFlowSegment(seg.id, updates)}
                 onRemove={() => removeFlowSegment(seg.id)}
               />
@@ -173,10 +175,60 @@ export function Step5TimeOfConc() {
       </DndContext>
 
       {flowSegments.length === 0 && (
-        <p className="text-xs text-zinc-500 text-center py-6">
-          No flow segments yet. Add sheet flow, shallow concentrated, or channel segments above.
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 py-8 px-6 text-center">
+          <Plus className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mb-3" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">No flow segments</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 max-w-[280px]">
+            Add sheet flow, shallow concentrated, or channel segments above to compute Tc.
+          </p>
+        </div>
       )}
+    </div>
+  )
+}
+
+function NumericInput({
+  value,
+  step,
+  unit,
+  className,
+  onChange,
+}: {
+  value: number
+  step: number
+  unit?: string
+  className?: string
+  onChange: (v: number) => void
+}) {
+  const [raw, setRaw] = useState(() => String(value))
+
+  useEffect(() => {
+    const parsed = parseFloat(raw)
+    if (isNaN(parsed) || parsed !== value) setRaw(String(value))
+  }, [value])
+
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        type="text"
+        inputMode="decimal"
+        value={raw}
+        onChange={(e) => {
+          setRaw(e.target.value)
+          const v = parseFloat(e.target.value)
+          if (!isNaN(v)) onChange(v)
+        }}
+        onBlur={() => {
+          const v = parseFloat(raw)
+          if (!isNaN(v)) {
+            setRaw(String(v))
+          } else {
+            setRaw(String(value))
+          }
+        }}
+        className={className}
+      />
+      {unit && <span className="text-xs text-zinc-500 whitespace-nowrap">{unit}</span>}
     </div>
   )
 }
@@ -184,11 +236,13 @@ export function Step5TimeOfConc() {
 function SortableSegmentCard({
   seg,
   index,
+  p2FromNoaa,
   onUpdate,
   onRemove,
 }: {
   seg: FlowSegment
   index: number
+  p2FromNoaa: number | null
   onUpdate: (updates: Partial<FlowSegment>) => void
   onRemove: () => void
 }) {
@@ -219,29 +273,23 @@ function SortableSegmentCard({
         </button>
       </div>
       <div className="p-3">
-        <SegmentFields seg={seg} onUpdate={onUpdate} />
+        <SegmentFields seg={seg} p2FromNoaa={p2FromNoaa} onUpdate={onUpdate} />
       </div>
     </div>
   )
 }
 
-function SegmentFields({ seg, onUpdate }: { seg: FlowSegment; onUpdate: (u: Partial<FlowSegment>) => void }) {
+function SegmentFields({ seg, p2FromNoaa, onUpdate }: { seg: FlowSegment; p2FromNoaa: number | null; onUpdate: (u: Partial<FlowSegment>) => void }) {
   const numField = (label: string, key: string, value: number, step = 1, unit = '') => (
     <div className="space-y-0.5">
       <Label className="text-zinc-500 dark:text-zinc-400 text-xs">{label}</Label>
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          step={step}
-          value={value}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value)
-            if (!isNaN(v)) onUpdate({ [key]: v } as Partial<FlowSegment>)
-          }}
-          className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs h-8 tabular-nums"
-        />
-        {unit && <span className="text-xs text-zinc-500 whitespace-nowrap">{unit}</span>}
-      </div>
+      <NumericInput
+        value={value}
+        step={step}
+        unit={unit}
+        className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs h-8 tabular-nums"
+        onChange={(v) => onUpdate({ [key]: v } as Partial<FlowSegment>)}
+      />
     </div>
   )
 
@@ -275,7 +323,31 @@ function SegmentFields({ seg, onUpdate }: { seg: FlowSegment; onUpdate: (u: Part
               </SelectContent>
             </Select>
           </div>
-          {numField('2-yr P (in)', 'p2InchRainfall', seg.p2InchRainfall, 0.1, 'in')}
+          <div className="space-y-0.5">
+            <Label className="text-zinc-500 dark:text-zinc-400 text-xs flex items-center gap-1">
+              2-yr 24-hr Rainfall
+              <InfoTooltip content="2-year 24-hour rainfall depth (inches) from TR-55 Table 3-1 / NOAA Atlas 14, used in the sheet flow travel time equation: Tt = 0.007(nL)^0.8 / (P₂^0.5 · s^0.4)" />
+            </Label>
+            <div className="flex items-center gap-1">
+              <NumericInput
+                value={seg.p2InchRainfall}
+                step={0.1}
+                unit="in"
+                className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs h-8 tabular-nums"
+                onChange={(v) => onUpdate({ p2InchRainfall: v } as Partial<FlowSegment>)}
+              />
+              {p2FromNoaa !== null && (
+                <button
+                  type="button"
+                  title={`Sync from NOAA Atlas 14 (${p2FromNoaa.toFixed(2)} in)`}
+                  onClick={() => onUpdate({ p2InchRainfall: p2FromNoaa } as Partial<FlowSegment>)}
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-sky-900/40 text-sky-400 border border-sky-700/50 hover:bg-sky-800/50 whitespace-nowrap leading-none"
+                >
+                  NOAA {p2FromNoaa.toFixed(2)}"
+                </button>
+              )}
+            </div>
+          </div>
         </div>
         {seg.lengthFt > 300 && (
           <div className="flex items-start gap-1.5 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-400">

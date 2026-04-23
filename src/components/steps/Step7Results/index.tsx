@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { HydrographChart } from './HydrographChart'
+import { ComparisonTable } from './ComparisonTable'
 import { exportElementToPdf, exportProjectJson } from '@/lib/export/pdfExport'
 import type { ReturnPeriod } from '@/types/project'
 
@@ -107,28 +108,28 @@ export function Step7Results() {
       {results && (
         <div ref={resultsRef} className="space-y-6">
           {/* Design summary — key numbers for report narrative */}
-          <Card className="bg-blue-900/30 border-blue-700">
+          <Card className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700">
             <CardContent className="py-4 space-y-3">
-              <p className="text-xs text-blue-300 uppercase tracking-wider">Design Summary</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 uppercase tracking-wider">Design Summary</p>
               <div className="grid gap-x-4 gap-y-3" style={{ gridTemplateColumns: `repeat(${returnPeriods.length}, minmax(0, 1fr))` }}>
                 {(returnPeriods as ReturnPeriod[]).map((period) => {
                   const qp = results.peakDischarge.find((r) => r.returnPeriod === period)?.peakDischargeCfs
                   const vs = results.detentionBasin.find((r) => r.returnPeriod === period)?.requiredStorageAcreFt
                   return (
                     <div key={period} className="space-y-2">
-                      <p className="text-xs font-semibold text-blue-300 tabular-nums">{period}-yr</p>
+                      <p className="text-xs font-semibold text-blue-600 dark:text-blue-300 tabular-nums">{period}-yr</p>
                       <div>
-                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Peak Flow</p>
-                        <p className="text-lg font-bold text-white tabular-nums">
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">Peak Flow</p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
                           {qp !== undefined ? qp.toFixed(1) : '—'}
-                          <span className="text-xs font-normal text-zinc-400 ml-1">cfs</span>
+                          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">cfs</span>
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-zinc-500 uppercase tracking-wide">Req. Storage</p>
-                        <p className="text-lg font-bold text-white tabular-nums">
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">Req. Storage</p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-white tabular-nums">
                           {vs !== undefined ? vs.toFixed(3) : '—'}
-                          <span className="text-xs font-normal text-zinc-400 ml-1">ac-ft</span>
+                          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">ac-ft</span>
                         </p>
                       </div>
                     </div>
@@ -157,7 +158,7 @@ export function Step7Results() {
           {/* Peak Discharge Table */}
           <Card className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+              <CardTitle className="text-base text-zinc-900 dark:text-white flex items-center gap-2">
                 Peak Discharge (Module 3)
                 <InfoTooltip content="qp = qu × Am × Q × Fp. qu from TR-55 Table 4-1, Am = area in sq mi, Q = runoff depth (in)." />
               </CardTitle>
@@ -193,7 +194,7 @@ export function Step7Results() {
           {/* Runoff Volume Table */}
           <Card className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+              <CardTitle className="text-base text-zinc-900 dark:text-white flex items-center gap-2">
                 Runoff Volume (Module 1)
                 <InfoTooltip content="Q = (P - Ia)² / (P - Ia + S). Volume = Q × A / 12 in acre-feet." />
               </CardTitle>
@@ -227,7 +228,7 @@ export function Step7Results() {
           {/* Detention Basin Table */}
           <Card className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-zinc-900 dark:text-white flex items-center gap-2">
+              <CardTitle className="text-base text-zinc-900 dark:text-white flex items-center gap-2">
                 Detention Basin Sizing (Module 4)
                 <InfoTooltip content="Vs/Vr from TR-55 Figure 6-1 cubic polynomial. Vs = required detention storage." />
               </CardTitle>
@@ -260,12 +261,15 @@ export function Step7Results() {
             </CardContent>
           </Card>
 
+          {/* Pre vs Post comparison table */}
+          <ComparisonTable results={results} />
+
           {/* Hydrograph */}
           <Card className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-zinc-900 dark:text-white flex items-center gap-2">
-                Synthetic Hydrograph
-                <InfoTooltip content="SCS triangular approximation. Time to peak = 0.6·Tc + D/2, base = 2.67·tp. Multiple return periods overlaid." />
+              <CardTitle className="text-base text-zinc-900 dark:text-white flex items-center gap-2">
+                Inflow Hydrograph with Allowable Outflow
+                <InfoTooltip content="SCS triangular inflow hydrograph (qi). Time to peak = 0.6·Tc + D/2, base = 2.67·tp. Dashed lines show user-entered allowable outflow (qo). Shaded region above qo represents conceptual detention storage." />
               </CardTitle>
             </CardHeader>
             <CardContent>

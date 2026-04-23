@@ -36,6 +36,10 @@ export interface ProjectState {
   watershed: WatershedGeometry | null
   rainfall: RainfallDepths | null
   noaaFetch: NoaaFetchState
+  // Pre-development conditions (Step 4)
+  preDevLandUseEntries: LandUseEntry[]
+  preDevCompositeCN: number | null
+  // Post-development land use (Step 5)
   landUseEntries: LandUseEntry[]
   compositeCN: number | null
   flowSegments: FlowSegment[]
@@ -65,7 +69,13 @@ export interface ProjectActions {
   setStormType: (type: StormType) => void
   setNoaaFetchState: (state: Partial<NoaaFetchState>) => void
 
-  // Land use
+  // Pre-development land use
+  addPreDevLandUseEntry: (entry: Omit<LandUseEntry, 'id'>) => void
+  updatePreDevLandUseEntry: (id: string, updates: Partial<Omit<LandUseEntry, 'id'>>) => void
+  removePreDevLandUseEntry: (id: string) => void
+  setPreDevCompositeCN: (cn: number | null) => void
+
+  // Post-development land use
   addLandUseEntry: (entry: Omit<LandUseEntry, 'id'>) => void
   updateLandUseEntry: (id: string, updates: Partial<Omit<LandUseEntry, 'id'>>) => void
   removeLandUseEntry: (id: string) => void
@@ -105,6 +115,8 @@ const DEFAULT_STATE: ProjectState = {
   watershed: null,
   rainfall: null,
   noaaFetch: { status: 'idle' },
+  preDevLandUseEntries: [],
+  preDevCompositeCN: null,
   landUseEntries: [],
   compositeCN: null,
   flowSegments: [],
@@ -196,6 +208,38 @@ export const useProjectStore = create<ProjectState & ProjectActions>()(
       setNoaaFetchState: (state) =>
         set((s) => {
           Object.assign(s.noaaFetch, state)
+        }),
+
+      addPreDevLandUseEntry: (entry) =>
+        set((s) => {
+          s.preDevLandUseEntries.push({ ...entry, id: uuidv4() })
+          s.preDevCompositeCN = null
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      updatePreDevLandUseEntry: (id, updates) =>
+        set((s) => {
+          const idx = s.preDevLandUseEntries.findIndex((e) => e.id === id)
+          if (idx !== -1) {
+            Object.assign(s.preDevLandUseEntries[idx], updates)
+            s.preDevCompositeCN = null
+            s.results = null
+          }
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      removePreDevLandUseEntry: (id) =>
+        set((s) => {
+          s.preDevLandUseEntries = s.preDevLandUseEntries.filter((e) => e.id !== id)
+          s.preDevCompositeCN = null
+          s.results = null
+          s.meta.updatedAt = new Date().toISOString()
+        }),
+
+      setPreDevCompositeCN: (cn) =>
+        set((s) => {
+          s.preDevCompositeCN = cn
         }),
 
       addLandUseEntry: (entry) =>
@@ -349,7 +393,17 @@ export const useProjectStore = create<ProjectState & ProjectActions>()(
     })),
     {
       name: 'peakflow-project',
+      version: 1,
       storage: createJSONStorage(() => localStorage),
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Partial<ProjectState>
+        if (version < 1) {
+          // v0 → v1: add pre-development fields
+          state.preDevLandUseEntries = state.preDevLandUseEntries ?? []
+          state.preDevCompositeCN = state.preDevCompositeCN ?? null
+        }
+        return state as ProjectState
+      },
     }
   )
 )
@@ -370,14 +424,29 @@ export const selectIsStep3Complete = (s: ProjectState) => {
   })
 }
 
+// Step 4: Pre-development conditions
 export const selectIsStep4Complete = (s: ProjectState) => {
+  if (
+    s.preDevLandUseEntries.length === 0 ||
+    !s.preDevLandUseEntries.every((e) => e.areaAcres > 0) ||
+    s.preDevCompositeCN === null ||
+    s.preDevCompositeCN <= 0
+  ) return false
+  if (s.watershed && s.watershed.areaAcres > 0) {
+    const totalArea = s.preDevLandUseEntries.reduce((sum, e) => sum + e.areaAcres, 0)
+    if (totalArea > s.watershed.areaAcres + 0.01) return false
+  }
+  return true
+}
+
+// Step 5: Post-development land use
+export const selectIsStep5Complete = (s: ProjectState) => {
   if (
     s.landUseEntries.length === 0 ||
     !s.landUseEntries.every((e) => e.areaAcres > 0) ||
     s.compositeCN === null ||
     s.compositeCN <= 0
   ) return false
-  // Block if total land use area exceeds watershed area (with small floating-point tolerance)
   if (s.watershed && s.watershed.areaAcres > 0) {
     const totalArea = s.landUseEntries.reduce((sum, e) => sum + e.areaAcres, 0)
     if (totalArea > s.watershed.areaAcres + 0.01) return false
@@ -385,10 +454,11 @@ export const selectIsStep4Complete = (s: ProjectState) => {
   return true
 }
 
-export const selectIsStep5Complete = (s: ProjectState) =>
+// Step 6: Time of Concentration
+export const selectIsStep6Complete = (s: ProjectState) =>
   s.flowSegments.length > 0 && s.tcHours !== null && s.tcHours > 0
 
-// Step 6 is optional — always passes so it never blocks navigation to Results.
-export const selectIsStep6Complete = (_s: ProjectState) => true
+// Step 7: Reaches & Structures — optional, always passes
+export const selectIsStep7Complete = (_s: ProjectState) => true
 
-export const selectIsStep7Complete = (s: ProjectState) => s.results !== null
+export const selectIsStep8Complete = (s: ProjectState) => s.results !== null

@@ -9,16 +9,18 @@ import {
   selectIsStep4Complete,
   selectIsStep5Complete,
   selectIsStep6Complete,
+  selectIsStep7Complete,
 } from '@/store/useProjectStore'
 
 const STEPS: { id: Step; label: string; description: string; optional?: boolean }[] = [
-  { id: 1, label: 'Project Setup',      description: 'Name & return periods'   },
-  { id: 2, label: 'Watershed',          description: 'Area delineation'         },
-  { id: 3, label: 'Rainfall',           description: 'Design storm depths'      },
-  { id: 4, label: 'Land Use & Soils',   description: 'Composite CN'             },
-  { id: 5, label: 'Time of Conc.',      description: 'Flow path segments'       },
-  { id: 6, label: 'Reaches & Structures', description: 'Channel routing & ponds', optional: true },
-  { id: 7, label: 'Results',            description: 'Peak discharge & storage' },
+  { id: 1, label: 'Project Setup',        description: 'Name & return periods'      },
+  { id: 2, label: 'Watershed',            description: 'Area delineation'            },
+  { id: 3, label: 'Rainfall',             description: 'Design storm depths'         },
+  { id: 4, label: 'Pre-Development',      description: 'Existing conditions CN'      },
+  { id: 5, label: 'Post-Development',     description: 'Composite CN'                },
+  { id: 6, label: 'Time of Conc.',        description: 'Flow path segments'          },
+  { id: 7, label: 'Reaches & Structures', description: 'Channel routing & ponds', optional: true },
+  { id: 8, label: 'Results',              description: 'Peak discharge & storage'    },
 ]
 
 function useStepCompletion(): Record<Step, boolean> {
@@ -30,7 +32,8 @@ function useStepCompletion(): Record<Step, boolean> {
     4: selectIsStep4Complete(s),
     5: selectIsStep5Complete(s),
     6: selectIsStep6Complete(s),
-    7: false,
+    7: selectIsStep7Complete(s),
+    8: false,
   }
 }
 

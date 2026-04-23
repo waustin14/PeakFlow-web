@@ -3,6 +3,7 @@ import { useProjectStore } from '@/store/useProjectStore'
 import { computeS, computeIa, computeRunoffDepth, computeRunoffVolume } from '@/lib/tr55/runoffVolume'
 import { computeIaOverP, interpolateQu, computePeakDischarge } from '@/lib/tr55/peakDischarge'
 import { computeRequiredStorage, computeVsOverVr } from '@/lib/tr55/detentionBasin'
+import { computeScenario } from '@/lib/tr55/scenario'
 import type { ReturnPeriod } from '@/types/project'
 import type {
   RunoffResult,
@@ -17,16 +18,11 @@ function buildTriangularHydrograph(
   tcHours: number,
   durationHours = 24
 ): HydrographPoint[] {
-  // SCS triangular approximation
-  // tlag = 0.6 * Tc (lag time from centroid of rainfall to peak)
-  // D (duration) = 1 hr for 24-hr storm approximation
-  const D = 1.0  // unit storm duration hr
-  const tpeak = 0.6 * tcHours + D / 2  // time to peak
-  const tbase = 2.67 * tpeak            // base time
-
+  const D = 1.0
+  const tpeak = 0.6 * tcHours + D / 2
+  const tbase = 2.67 * tpeak
   const points: HydrographPoint[] = []
-  const step = 0.25  // 15-min intervals
-
+  const step = 0.25
   for (let t = 0; t <= Math.max(durationHours, tbase) + step; t += step) {
     let q: number
     if (t <= tpeak) {
@@ -38,7 +34,6 @@ function buildTriangularHydrograph(
     }
     points.push({ timeHr: Math.round(t * 100) / 100, flowCfs: Math.max(0, q) })
   }
-
   return points
 }
 
@@ -51,6 +46,7 @@ export function useTR55Results() {
       rainfall,
       returnPeriods,
       compositeCN,
+      preDevCompositeCN,
       tcHours,
       allowableOutflows,
       setResults,
@@ -121,9 +117,21 @@ export function useTR55Results() {
         requiredStorageAcreFt: Vs,
       })
 
-      // Synthetic hydrograph
+      // Post-dev hydrograph
       hydrographs[period] = buildTriangularHydrograph(qp, tcHours)
     }
+
+    // Pre-development scenario (when CN is available)
+    const preDev = preDevCompositeCN
+      ? computeScenario(
+          preDevCompositeCN,
+          tcHours,
+          areaAcres,
+          rainfall.depths,
+          returnPeriods as ReturnPeriod[],
+          stormType
+        )
+      : undefined
 
     const results: TR55Results = {
       compositeCN: cn,
@@ -133,6 +141,7 @@ export function useTR55Results() {
       peakDischarge,
       detentionBasin,
       hydrographs: hydrographs as Record<ReturnPeriod, HydrographPoint[]>,
+      preDev,
       computedAt: new Date().toISOString(),
     }
 
