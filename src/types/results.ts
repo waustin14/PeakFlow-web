@@ -31,7 +31,16 @@ export interface HydrographPoint {
   flowCfs: number
 }
 
+/** Minimal scenario results — used for the pre-development baseline overlay. */
+export interface ScenarioResults {
+  compositeCN: number
+  tcHours: number
+  peakDischarge: Partial<Record<ReturnPeriod, number>>
+  hydrographs: Partial<Record<ReturnPeriod, HydrographPoint[]>>
+}
+
 export interface TR55Results {
+  // Post-development (primary computation)
   compositeCN: number
   tcHours: number
   areaAcres: number
@@ -39,5 +48,7 @@ export interface TR55Results {
   peakDischarge: PeakDischargeResult[]
   detentionBasin: DetentionBasinResult[]
   hydrographs: Record<ReturnPeriod, HydrographPoint[]>
+  // Pre-development baseline (present when pre-dev CN is configured)
+  preDev?: ScenarioResults
   computedAt: string
 }

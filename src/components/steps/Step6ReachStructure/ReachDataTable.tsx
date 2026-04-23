@@ -1,9 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, GitBranch } from 'lucide-react'
 import { useProjectStore } from '@/store/useProjectStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { Reach } from '@/types/project'
 
 const MANNINGS_OPTIONS = [
@@ -47,18 +47,6 @@ export function ReachDataTable() {
 
   return (
     <div className="space-y-3">
-      {/* Table header */}
-      <div className="hidden md:grid reach-grid-cols items-center gap-2 px-3 py-1.5 rounded-md bg-zinc-50 dark:bg-zinc-800/60">
-        <ColHeader>Reach Name</ColHeader>
-        <ColHeader tooltip="Which reach or outlet this reach flows into.">Receiving</ColHeader>
-        <ColHeader tooltip="Length of the channel reach in feet.">Length (ft)</ColHeader>
-        <ColHeader tooltip="Manning's roughness coefficient for the channel cross-section.">Manning's n</ColHeader>
-        <ColHeader tooltip="Channel bed slope in ft/ft (rise over run).">Slope (ft/ft)</ColHeader>
-        <ColHeader tooltip="Width of the channel bottom (trapezoidal cross-section).">Bot. Width (ft)</ColHeader>
-        <ColHeader tooltip="Horizontal distance per 1 ft of vertical rise. Enter 2 for a 2:1 side slope.">Side Slopes</ColHeader>
-        <ColHeader tooltip="Optional detention structure located at the downstream end of this reach.">Structure</ColHeader>
-        <span />
-      </div>
 
       {/* Rows */}
       {reaches.map((reach) => (
@@ -82,6 +70,51 @@ export function ReachDataTable() {
         Add Reach
       </Button>
     </div>
+  )
+}
+
+function NumericInput({
+  value,
+  step,
+  placeholder,
+  className,
+  onChange,
+}: {
+  value: number
+  step: number
+  placeholder?: string
+  className?: string
+  onChange: (v: number) => void
+}) {
+  const [raw, setRaw] = useState(() => value === 0 ? '' : String(value))
+
+  useEffect(() => {
+    const parsed = parseFloat(raw)
+    if (isNaN(parsed) || parsed !== value) setRaw(value === 0 ? '' : String(value))
+  }, [value])
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={raw}
+      placeholder={placeholder ?? '0'}
+      onChange={(e) => {
+        setRaw(e.target.value)
+        const v = parseFloat(e.target.value)
+        if (!isNaN(v)) onChange(v)
+        else if (e.target.value === '' || e.target.value === '-') onChange(0)
+      }}
+      onBlur={() => {
+        const v = parseFloat(raw)
+        if (!isNaN(v)) {
+          setRaw(String(v))
+        } else {
+          setRaw(value === 0 ? '' : String(value))
+        }
+      }}
+      className={className}
+    />
   )
 }
 
@@ -110,23 +143,18 @@ function ReachRow({
     step = 1,
     placeholder = ''
   ) => (
-    <Input
-      type="number"
+    <NumericInput
+      value={value}
       step={step}
-      value={value === 0 ? '' : value}
       placeholder={placeholder || '0'}
-      onChange={(e) => {
-        const v = parseFloat(e.target.value)
-        onChange(isNaN(v) ? 0 : v)
-      }}
       className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs h-8 tabular-nums w-full"
+      onChange={onChange}
     />
   )
 
   return (
     <div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-      {/* Mobile: stacked layout */}
-      <div className="md:hidden p-3 space-y-3">
+      <div className="p-3 space-y-3">
         <div className="flex items-center gap-2">
           <Input
             value={reach.name}
@@ -160,28 +188,6 @@ function ReachRow({
         </div>
       </div>
 
-      {/* Desktop: grid row */}
-      <div className="hidden md:grid reach-grid-cols items-center gap-2 p-2">
-        <Input
-          value={reach.name}
-          onChange={(e) => onUpdate({ name: e.target.value })}
-          placeholder="Name"
-          className="bg-zinc-50 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-white text-xs h-8 font-medium"
-        />
-        <ReceivingSelect value={reach.receivingReachId} options={receivingOptions} onChange={(v) => onUpdate({ receivingReachId: v })} />
-        {numInput(reach.lengthFt, (v) => onUpdate({ lengthFt: v }), 10)}
-        <ManningsSelect value={reach.manningsN} onChange={(v) => onUpdate({ manningsN: v })} />
-        {numInput(reach.frictionSlopeFtFt, (v) => onUpdate({ frictionSlopeFtFt: v }), 0.0001, '0.0100')}
-        {numInput(reach.bottomWidthFt, (v) => onUpdate({ bottomWidthFt: v }), 1)}
-        <div className="flex items-center gap-1">
-          {numInput(reach.avgSideSlopes, (v) => onUpdate({ avgSideSlopes: v }), 0.5)}
-          <span className="text-xs text-zinc-500 shrink-0">:1</span>
-        </div>
-        <StructureSelect value={reach.structureId} options={structureNames} onChange={(v) => onUpdate({ structureId: v || undefined })} />
-        <button onClick={onRemove} className="flex items-center justify-center text-zinc-400 hover:text-red-500 dark:hover:text-red-400">
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
     </div>
   )
 }
@@ -258,15 +264,6 @@ function StructureSelect({
         ))}
       </SelectContent>
     </Select>
-  )
-}
-
-function ColHeader({ children, tooltip }: { children: React.ReactNode; tooltip?: string }) {
-  return (
-    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-      {children}
-      {tooltip && <InfoTooltip content={tooltip} />}
-    </span>
   )
 }
 

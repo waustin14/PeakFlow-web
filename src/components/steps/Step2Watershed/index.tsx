@@ -236,9 +236,13 @@ export function Step2Watershed() {
       )}
 
       {!watershed && (
-        <p className="text-xs text-zinc-500 text-center py-4">
-          No watershed defined yet. Draw on the map or enter area manually.
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 py-8 px-6 text-center">
+          <MapPin className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mb-3" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">No watershed defined</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 max-w-[260px]">
+            Draw a polygon on the map or enter the area manually below.
+          </p>
+        </div>
       )}
 
       {/* Contour overlay controls — only useful when a polygon exists */}
